@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
 
     # backup code
-    backup_code(save_dir=save_path)
+    # backup_code(save_dir=save_path)
 
     trainer = pl.Trainer(
         logger=logger,

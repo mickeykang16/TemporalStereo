@@ -3,6 +3,7 @@
 import torch
 
 import cupy
+import torch
 import re
 
 kernel_Softsplat_updateOutput = '''

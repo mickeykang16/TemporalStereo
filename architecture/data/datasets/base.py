@@ -178,7 +178,7 @@ class StereoDatasetBase(Dataset):
                 _include_keys = ['color_aug']
                 if key[0] in _include_keys:
                     name, frame_idx, side = key
-                    # value = pad(value, [pad_left, pad_right, pad_top, pad_bottom], mode='constant', value=0)
+                    value = pad(value, [pad_left, pad_right, pad_top, pad_bottom], mode='constant', value=0)
                     value = value.unsqueeze(dim=0)
                     value = torch.nn.functional.interpolate(value, size=(self.height, self.width), mode='bilinear', align_corners=True)
                     value = value.squeeze(dim=0)

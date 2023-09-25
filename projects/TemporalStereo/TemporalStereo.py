@@ -247,21 +247,24 @@ class TemporalStereo(pl.LightningModule):
 
         self.logger.filewriter.stdout(info)
 
+    # Main ft for inference
+    # Since going on inference, only save outputs of left frame
     def multi_frame_forward(self, batch, is_train=False):
         final_outputs = {}
         outputs = {}
         self.frame_idxs.sort()
         for i, timestamp in enumerate(self.frame_idxs):
             self.current_timestamp = timestamp
-
+            # save empty previous at start
             if i == 0 and self.with_previous:
                 outputs[('prev_info', timestamp-1, 'l')] = {}
-
+            # 
             if self.previous_with_gradient:
                 assert self.with_previous
                 outs = self(batch, outputs, is_train=is_train, timestamp=timestamp)
                 final_outputs.update(outs)
             else:
+                # current image
                 if timestamp == 0:
                     outs = self(batch, outputs, is_train=is_train, timestamp=timestamp)
                     final_outputs.update(outs)

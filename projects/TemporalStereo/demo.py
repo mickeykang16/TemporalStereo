@@ -2,8 +2,8 @@ import sys
 import os.path as osp
 sys.path.insert(0, osp.join(osp.dirname(osp.abspath(__file__)), '../../'))
 import matplotlib
-matplotlib.use('TkAgg')
-
+# matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 large = 22; med = 16; small = 12
 params = {
@@ -58,9 +58,10 @@ def to_gpu(tensor, device):
         return tensor
 
 def visualize(outputs, save_path=None):
-    left_image = outputs[('color', 0, 'l')][0].cpu().numpy().transpose(1, 2, 0).clip(0, 1)
-    right_image = outputs[('color', 0, 'r')][0].cpu().numpy().transpose(1, 2, 0).clip(0, 1)
-    disp_gt = outputs[('disp_gt', 0, 'l')][0, 0].cpu().numpy()
+    left_image = outputs[('color_aug', 0, 'l')][0].cpu().numpy().transpose(1, 2, 0).clip(0, 1)
+    right_image = outputs[('color_aug', 0, 'r')][0].cpu().numpy().transpose(1, 2, 0).clip(0, 1)
+    # disp_gt = outputs[('disp_gt', 0, 'l')][0, 0].cpu().numpy()
+    disp_gt = outputs[('disps', 0, 'l')][0][0, 0,].cpu().numpy()
     disp_est = outputs[('disps', 0, 'l')][0][0, 0,].cpu().numpy()
 
     # removing pad in estimation
@@ -95,7 +96,7 @@ def visualize(outputs, save_path=None):
     cats = np.concatenate((left_image, right_image, cat_disp_color, error_map, error_map_with_bar), axis=0)
 
     save_image = True
-    data_type = 'tartanair'
+    data_type = 'kitti2015_scenflow_ckpt'
     if save_image:
         root = save_path.split('/')[:-1]
         id = save_path.split('/')[-1].split('_')[-1].split('.')[0]
@@ -106,7 +107,7 @@ def visualize(outputs, save_path=None):
         plt.imsave(os.path.join(root, "{}_left.png".format(id)), left_image)
         plt.imsave(os.path.join(root, "{}_right.png".format(id)), right_image)
         plt.imsave(os.path.join(root, "{}_error.png".format(id)), error_map)
-        plt.imsave(os.path.join(root, "{}_gt.png".format(id)), disp_to_color(disp_gt).clip(0, 1))
+        # plt.imsave(os.path.join(root, "{}_gt.png".format(id)), disp_to_color(disp_gt).clip(0, 1))
         plt.imsave(os.path.join(root, "{}_est.png".format(id)), disp_to_color(disp_est).clip(0, 1))
 
 
@@ -116,7 +117,7 @@ def visualize(outputs, save_path=None):
         plt.show()
     else:
         plt.imshow(cats)
-        plt.savefig(save_path, bbox_inches='tight')
+        # plt.savefig(save_path, bbox_inches='tight')
 
     return perct, epe
 
@@ -133,6 +134,7 @@ def inference_stereo(
 
     percts = {}
     epes = {}
+    #tqdm just for process bar
     for batch_idx, batch in tqdm(enumerate(dataset)):
         batch = dataset[batch_idx]
 
