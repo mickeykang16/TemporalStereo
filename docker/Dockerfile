@@ -11,19 +11,21 @@ RUN pip install torch==1.10.1+cu113 torchvision==0.11.2+cu113 torchaudio==0.10.1
 RUN python3 -m pip install 'git+https://github.com/facebookresearch/detectron2.git' && \
     pip install cupy-cuda113
 
-WORKDIR /home/jaeyoung/ws/TemporalStereo
-RUN mkdir -p /home/jaeyoung/data
-RUN mkdir -p /home/jaeyoung/ws/TemporalStereo
-
 RUN apt-get -y install qt5-default python3-pyqt5
 RUN pip install pyqt5 --verbose
-RUN ls -al ../
-# ADD ../requirements.txt /home/jaeyoung/ws/TemporalStereo
-# ADD ../../data /home/jaeyoung/
-# RUN pip install -r requirements.txt
+RUN pip install debugpy
+RUN apt-get -y install net-tools
 
-ENV CUDA_VISIBLE_DEVICES 4,5,6,7
+RUN mkdir -p /home/jaeyoung/data
+RUN mkdir -p /home/jaeyoung/ws
+ADD ../requirements.txt /home/jaeyoung/requirements.txt
 
+WORKDIR /home/jaeyoung/ws/TemporalStereo
+RUN pip install -r ../../requirements.txt
+
+CMD python3 -m debugpy --listen 0.0.0.0:5678 /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/dist_train.py --config-file /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/configs/kitti2015-pair.yaml
+# ENV CUDA_VISIBLE_DEVICES 4,5,6,7
+RUN apt-get install htop
 # RUN cd .
 # $ git clone https://github.com/NVIDIA/apex
 # $ cd apex

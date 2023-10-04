@@ -29,6 +29,12 @@ from logger import Logger
 
 import shutil
 
+# import debugpy
+# debugpy.listen(("0.0.0.0", 5678))
+# print("Waiting for client to attach...")
+# debugpy.wait_for_client()
+import pdb
+
 @rank_zero_only
 def backup_code(save_dir):
     savedir = '{}/code/'.format(save_dir)

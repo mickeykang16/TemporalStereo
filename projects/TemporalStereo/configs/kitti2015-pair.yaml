@@ -72,37 +72,43 @@ MODEL:
 DATA:
   TRAIN:
     TYPE: "KITTI2015"
-    DATA_ROOT: "./datasets/KITTI-Multiview/KITTI-2015/"
-    ANNFILE: "./splits/kitti2015/view_11_train_all.json"
+    # DATA_ROOT: "/home/jaeyoung/data/KITTI-2015/"
+    DATA_ROOT: "/home/jaeyoung/data/"
+    ANNFILE: "/home/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
     BATCH_SIZE: 4
     NUM_WORKERS: 8
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: False
     HEIGHT: 320
     WIDTH: 1184
-    FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    FRAME_IDXS: [-1, 0, ]
   VAL:
     TYPE: "KITTI2015"
-    DATA_ROOT: "./datasets/KITTI-Multiview/KITTI-2015/"
-    ANNFILE: "./splits/kitti2015/view_11_val.json"
+    # DATA_ROOT: "/home/jaeyoung/data/KITTI-2015/"
+    DATA_ROOT: "/home/jaeyoung/data/"
+    ANNFILE: "/home/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
     BATCH_SIZE: 1
-    NUM_WORKERS: 2
+    NUM_WORKERS: 4
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: True
     HEIGHT: 384
     WIDTH: 1248
-    FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    FRAME_IDXS: [-1, 0, ]
   TEST:
     TYPE: "KITTI2015"
-    DATA_ROOT: "./datasets/KITTI-Multiview/KITTI-2015/"
-    ANNFILE: "./splits/kitti2015/view_11_train_all.json"
+    # DATA_ROOT: "/home/jaeyoung/data/KITTI-2015/"
+    DATA_ROOT: "/home/jaeyoung/data/"
+    ANNFILE: "/home/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
     BATCH_SIZE: 1
     NUM_WORKERS: 2
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: True
     HEIGHT: 384
     WIDTH: 1248
-    FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
+    FRAME_IDXS: [-1, 0, ]
 
 VAL:
   EVAL_DISPARITY_IDS: [0, 1, 2, 3, 4, 5, 6, 7, 8]
