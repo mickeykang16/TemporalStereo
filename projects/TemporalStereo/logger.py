@@ -1,5 +1,6 @@
 import os
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.utilities import rank_zero_only
 import time
 

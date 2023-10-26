@@ -34,7 +34,9 @@ def block_cost(reference_fm, target_fm, disp_sample, block_cost_scale=3):
     if isinstance(disp_sample, int):
         max_disp = disp_sample
         # [b, c, h, max_disp-1+w]
+        # pad left to make empty space for disparity shift
         padded_target_fm = F.pad(target_fm, pad=(max_disp-1, 0, 0, 0), mode='constant', value=0.0)
+        
         unfolded_target_fm = F.unfold(padded_target_fm, kernel_size=(1, max_disp), dilation=(1, 1), padding=(0, 0), stride=(1, 1))
         unfolded_target_fm = unfolded_target_fm.reshape(B, C, max_disp, H, W)
         # [max_disp-1, ..., 2, 1, 0] -> [0, 1, 2, ..., max_disp-1]
@@ -77,7 +79,7 @@ def block_cost(reference_fm, target_fm, disp_sample, block_cost_scale=3):
 
         costs.append(cost)
 
-    # [B, 2C + C//8*local_scale, D, H, W]
+    # [B, C + C//8*local_scale, D, H, W]
     cost = torch.cat(costs, dim=1)
 
     return cost

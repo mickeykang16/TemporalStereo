@@ -48,13 +48,17 @@ class TemporalStereo(pl.LightningModule):
 
     def train_dataloader(self):
         dataset = build_stereo_dataset(self.cfg.DATA.TRAIN, 'train')
-
         self.train_dataset_length = len(dataset)
         self.logger.filewriter.set_num_total_steps(len(dataset) // self.cfg.DATA.TRAIN.BATCH_SIZE * self.cfg.TRAINER.MAX_EPOCHS)
         self.logger.filewriter.set_start_time(time.time())
 
+        if 'mvsec' in self.cfg.DATA.TRAIN.TYPE.lower():
+            do_shuffle = False
+        else:
+            do_shuffle = True
+        
         dataloader = DataLoader(
-            dataset, self.cfg.DATA.TRAIN.BATCH_SIZE, shuffle=True,
+            dataset, self.cfg.DATA.TRAIN.BATCH_SIZE, shuffle=do_shuffle,
             num_workers=self.cfg.DATA.TRAIN.NUM_WORKERS, pin_memory=True, drop_last=False)
 
         return dataloader
@@ -187,7 +191,8 @@ class TemporalStereo(pl.LightningModule):
         self.log_dict(whole_error_dict, logger=True, on_epoch=True, reduce_fx=torch.mean)
 
         # randomly visulize some batch
-        if batch_idx == (self.current_epoch % (self.val_dataset_length // self.cfg.VAL.VIS_INTERVAL)):
+        if batch_idx == (self.current_epoch % (self.val_dataset_length // self.cfg.VAL.VIS_INTERVAL))\
+            and 'mvsec' not in self.cfg.DATA.TRAIN.TYPE.lower():
             self.log_image(self.cfg.DATA.VAL.BATCH_SIZE, batch, outputs)
 
         return whole_error_dict
@@ -289,9 +294,8 @@ class TemporalStereo(pl.LightningModule):
         bs, c, full_h, full_w = batch[('color_aug', timestamp, 'l')].shape
         prev_info = outputs.get(('prev_info', timestamp-1, 'l'), {})
         left_image, right_image = batch[('color_aug', timestamp, 'l')], batch[('color_aug', timestamp, 'r')]
-
         left_feats, right_feats, prev_info = self.backbone(left_image, right_image, prev_info)
-
+        # prev_info['memories', ]
         if self.with_previous and ((timestamp-1) in self.frame_idxs):
             outs, prev_info = self.update_map(batch, prev_info, timestamp)
             outputs.update(outs)
@@ -501,6 +505,8 @@ class TemporalStereo(pl.LightningModule):
 
         for bs in range(min(4, batch_size)):  # write a maxmimum of four images
             for frame_id in self.frame_idxs:
+                if 'mvsec' in self.cfg.DATA.TRAIN.TYPE.lower():
+                    continue
                 self.logger.experiment.add_image(
                     prefix+"color_{}_{}/{}".format(frame_id, 'l', bs),
                     inputs[("color", frame_id, 'l')][bs].data,

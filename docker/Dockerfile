@@ -20,12 +20,14 @@ RUN mkdir -p /home/jaeyoung/data
 RUN mkdir -p /home/jaeyoung/ws
 ADD ../requirements.txt /home/jaeyoung/requirements.txt
 
-WORKDIR /home/jaeyoung/ws/TemporalStereo
+WORKDIR /home/jaeyoung/ws/TemporalEventStereo
 RUN pip install -r ../../requirements.txt
 
-CMD python3 -m debugpy --listen 0.0.0.0:5678 /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/dist_train.py --config-file /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/configs/kitti2015-pair.yaml
+# CMD python3 -m debugpy --listen 0.0.0.0:5678 /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/dist_train.py --config-file /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/configs/kitti2015-pair.yaml
 # ENV CUDA_VISIBLE_DEVICES 4,5,6,7
 RUN apt-get install htop
+RUN pip install wandb
+RUN pip install pillow==9.0.1
 # RUN cd .
 # $ git clone https://github.com/NVIDIA/apex
 # $ cd apex

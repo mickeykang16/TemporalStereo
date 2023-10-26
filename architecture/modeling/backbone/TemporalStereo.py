@@ -58,8 +58,8 @@ class TEMPORALSTEREO(Backbone):
         self.activation             = activation
 
         net = timm.create_model('efficientnetv2_rw_s', pretrained=True)
-
         self.conv_stem = net.conv_stem
+        self.conv_stem_event = Conv2d(5, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
         self.bn1 = net.bn1
         self.act1 = net.act1
 
@@ -101,9 +101,12 @@ class TEMPORALSTEREO(Backbone):
     def _forward(self, x, memories:Union[None, List[torch.Tensor], Tuple[torch.Tensor]]):
         memory_idx = 0
         out_memories = []
-        # [B, 32, H//2, W//2]
-        x = self.act1(self.bn1(self.conv_stem(x)))
-        # [B, 16, H//2, W//2]
+        # [B, 24, H//2, W//2]
+        if x.shape[1] == 5:
+            x = self.act1(self.bn1(self.conv_stem_event(x)))    
+        else:
+            x = self.act1(self.bn1(self.conv_stem(x)))
+        # [B, 24, H//2, W//2]
         x = self.block0(x)
         # [B, 24, H//4, W//4]
         x, out, memory_idx = _block_forward(self.block1, x, self.memory_percent, memories, memory_idx)

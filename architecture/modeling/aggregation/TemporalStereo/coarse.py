@@ -80,7 +80,6 @@ class CoarseAggregation(nn.Module):
         disp_sample = torch.linspace(0, self.num_sample-1, self.num_sample).view(1, self.num_sample, 1, 1)
         disp_sample = disp_sample.expand(B, self.num_sample, H, W).to(left.device)
         init_cost = self.init3d(raw_cost)
-
         memory = prev_info.get('cost_memory', None)
         use_past_cost = prev_info.get('use_past_cost', False)
         if memory is None or not use_past_cost:

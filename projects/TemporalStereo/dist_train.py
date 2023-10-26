@@ -11,6 +11,7 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.callbacks.stochastic_weight_avg import StochasticWeightAveraging
 from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.loggers import WandbLogger
 
 seed_everything(43, workers=True)
 
@@ -54,7 +55,7 @@ def backup_code(save_dir):
                                                       '__pycache__', '.DS_Store', ))
 
 if __name__ == "__main__":
-
+    __spec__ = None
     args = get_parser().parse_args()
 
     cfg = get_cfg(args)
@@ -80,10 +81,11 @@ if __name__ == "__main__":
     elif len(cfg.TRAINER.LOAD_FROM_CHECKPOINT) > 0:
         logger.filewriter.stdout("Warning: Checkpoint at {} doesn't exist!".format(cfg.TRAINER.LOAD_FROM_CHECKPOINT))
 
+    wandb_logger = WandbLogger(log_model="all")
 
     # backup code
     # backup_code(save_dir=save_path)
-
+    
     trainer = pl.Trainer(
         logger=logger,
         strategy='ddp',
@@ -102,11 +104,14 @@ if __name__ == "__main__":
         gradient_clip_val= cfg.TRAINER.GRADIENT_CLIP_VAL,
         accumulate_grad_batches=1,
         fast_dev_run=False,
-        # limit_train_batches=0.002, limit_val_batches=0.01, limit_test_batches=0.005,
+        log_every_n_steps=cfg.TRAINER.LOG_EVERY_N_STEPS
+        # limit_train_batches=0.002, 
+        # limit_val_batches=0.0, 
+        # limit_test_batches=0.005,
     )
 
     # ----------------------------------------- Train ----------------------------------------- #
-
+    # breakpoint()
     trainer.fit(model)
 
     # ----------------------------------------- Test  ----------------------------------------- #

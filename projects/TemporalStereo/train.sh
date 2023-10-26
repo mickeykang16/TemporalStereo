@@ -1,8 +1,5 @@
-# docker build -t temporal_stereo:test -f /home/jaeyoung/docker/Dockerfile . 
-# docker run -it --gpus '"device=4,5,6,7"' temporal_stereo:test bash
+tensorboard --logdir=exps/TemporalStereo/mvsec/quad --port 6006 --host=0.0.0.0&
+python3 -m pdb -c continue projects/TemporalStereo/dist_train.py  --config-file projects/TemporalStereo/configs/mvsec_4.yaml
+# python3 projects/TemporalStereo/dist_train.py  --config-file projects/TemporalStereo/configs/mvsec_4.yaml
 
-
-python3 -m debugpy --listen 0.0.0.0:5678 /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/dist_train.py --config-file /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/configs/kitti2015-pair.yaml
-
-echo Results are saved to $LOGDIR.
 echo done!

@@ -1,2 +1,2 @@
-docker build -t temporal_stereo:test \
-    -f /home/jaeyoung/ws/TemporalStereo/docker/Dockerfile . 
+docker build -t temporal_stereo:event \
+    -f /home/user/jaeyoung/ws/TemporalEventStereo/docker/Dockerfile . 

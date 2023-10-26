@@ -1,17 +1,18 @@
 LOG_DIR: "./exps/"
-FRAME_IDXS: [-1, 0, ]
+FRAME_IDXS: [-3, -2, -1, 0, ]
 
 CHECKPOINT:
   EVERY_N_TRAIN_STEPS: 0
-  EVERY_N_EPOCHS: 4
+  EVERY_N_EPOCHS: 2
 
 TRAINER:
   NAME: "TemporalStereo"
-  NUM_GPUS: 4
+  NUM_GPUS: 3
   GRADIENT_CLIP_VAL: 0.1
-  VERSION: "kitti2015/multi"
+  VERSION: "mvsec/quad"
   MAX_EPOCHS: 16
-  CHECK_VAL_EVERY_N_EPOCHS: 20
+  CHECK_VAL_EVERY_N_EPOCHS: 2
+  LOG_EVERY_N_STEPS: 20
   LOAD_FROM_CHECKPOINT: "./projects/TemporalStereo/exps/sceneflow.ckpt"
 
 SCHEDULER:
@@ -71,44 +72,44 @@ MODEL:
 
 DATA:
   TRAIN:
-    TYPE: "KITTI2015"
+    TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
-    DATA_ROOT: "/home/user/jaeyoung/data/"
-    ANNFILE: "/home/user/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
-    BATCH_SIZE: 2
-    NUM_WORKERS: 8
+    DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/"
+    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_train.json"
+    BATCH_SIZE: 8
+    NUM_WORKERS: 16
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: False
-    HEIGHT: 320
-    WIDTH: 1184
+    HEIGHT: 256
+    WIDTH: 336
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-1, 0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
   VAL:
-    TYPE: "KITTI2015"
+    TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
-    DATA_ROOT: "/home/user/jaeyoung/data/"
-    ANNFILE: "/home/user/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
-    BATCH_SIZE: 1
-    NUM_WORKERS: 4
+    DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset"
+    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_test.json"
+    BATCH_SIZE: 4
+    NUM_WORKERS: 8
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: True
-    HEIGHT: 384
-    WIDTH: 1248
+    HEIGHT: 272
+    WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-1, 0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
   TEST:
-    TYPE: "KITTI2015"
+    TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
-    DATA_ROOT: "/home/user/jaeyoung/data/"
-    ANNFILE: "/home/user/jaeyoung/data/KITTI-2015/view_2_train_12&15.json"
-    BATCH_SIZE: 1
-    NUM_WORKERS: 2
+    DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/"
+    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_test.json"
+    BATCH_SIZE: 4
+    NUM_WORKERS: 8
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: True
-    HEIGHT: 384
-    WIDTH: 1248
+    HEIGHT: 256
+    WIDTH: 344
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-1, 0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
 
 VAL:
   EVAL_DISPARITY_IDS: [0, 1, 2, 3, 4, 5, 6, 7, 8]

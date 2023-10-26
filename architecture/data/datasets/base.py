@@ -62,6 +62,7 @@ class StereoDatasetBase(Dataset):
         self.with_flow_gt = False
         self.with_pose_gt = False
 
+        self.is_image = True
     def build_transform(self):
         self.img_loader = pil_loader
         # get an Tensor; if is ByteTensor, it will be normailzed to [0, 1]
@@ -98,36 +99,48 @@ class StereoDatasetBase(Dataset):
 
     def do_transform(self, sample):
         # PIL object
-        H, W = sample[('color', 0, 'l')].height, sample[('color', 0, 'l')].width
-
+        if self.is_image:
+            H, W = sample[('color', 0, 'l')].height, sample[('color', 0, 'l')].width
+        else:
+            H, W = sample[('color', 0, 'l')].shape[-2], sample[('color', 0, 'l')].shape[-1]
         # color augmentation, to tensor, normalize
-        for key in list(sample):
-            value = sample[key]
-            if 'color' in key:
-                name, frame_idx, side = key
-                # color aug
-                if self.do_same_lr_transform:
-                    color_aug_value = self.color_aug(value)
-                else:
-                    if 'l' in key:
+        if self.is_image:
+            for key in list(sample):
+                value = sample[key]
+                if 'color' in key:
+                    name, frame_idx, side = key
+                    # color aug
+                    if self.do_same_lr_transform:
                         color_aug_value = self.color_aug(value)
-                    elif 'r' in key:
-                        if random.random() > 0.5:
-                            color_aug_value = self.color_aug_r(value)
-                        else:
-                            color_aug_value = self.color_aug(value)
                     else:
-                        raise ValueError('l or r key is not in sample')
+                        if 'l' in key:
+                            color_aug_value = self.color_aug(value)
+                        elif 'r' in key:
+                            if random.random() > 0.5:
+                                color_aug_value = self.color_aug_r(value)
+                            else:
+                                color_aug_value = self.color_aug(value)
+                        else:
+                            raise ValueError('l or r key is not in sample')
 
-                # value range [0, 1]
-                value = self.to_tensor(value)
-                color_aug_value = self.to_tensor(color_aug_value)
+                    # value range [0, 1]
+                    value = self.to_tensor(value)
+                    color_aug_value = self.to_tensor(color_aug_value)
 
-                # for imagenet normalization, value range [-2.12, 2.64]
-                color_aug_value = F.normalize(color_aug_value, mean=self.mean, std=self.std)
+                    # for imagenet normalization, value range [-2.12, 2.64]
+                    color_aug_value = F.normalize(color_aug_value, mean=self.mean, std=self.std)
 
-                sample[(name, frame_idx, side)] = value
-                sample[(name+'_aug', frame_idx, side)] = color_aug_value
+                    sample[(name, frame_idx, side)] = value
+                    sample[(name+'_aug', frame_idx, side)] = color_aug_value
+        # for event voxel, no augmentation, just to_tensor
+        else:
+            for key in list(sample):
+                value = sample[key]
+                if 'color' in key:
+                    name, frame_idx, side = key
+                    value = torch.Tensor(value)
+                    sample[(name, frame_idx, side)] = value
+                    sample[(name+'_aug', frame_idx, side)] = value
 
         ch = 0; cw = 0; pad_left = 0; pad_right = 0; pad_top = 0; pad_bottom = 0
         if self.height == H and self.width == W:
@@ -147,7 +160,7 @@ class StereoDatasetBase(Dataset):
         # random crop/pad
         for key in list(sample):
             value = sample[key]
-            if self.is_train:
+            if self.is_train and self.is_image:
                 # random crop
                 _include_keys = ['color', 'color_aug', 'disp_gt', 'depth_gt', 'backward_flow_gt', 'forward_flow_gt']
                 if key[0] in _include_keys:
@@ -214,6 +227,7 @@ class StereoDatasetBase(Dataset):
         raise NotImplementedError
 
     def __getitem__(self, idx):
+        # import pdb; pdb.set_trace()
         sample = {}
         item = self.data_list[idx]
         # baseline
@@ -226,6 +240,7 @@ class StereoDatasetBase(Dataset):
         else:
             intrinsic_path = item['0']['left_image_path']
         # K is the full_K / (h, w)
+        # Differ by dataset
         K, full_K, image_resolution = self.intrinsicLoader(intrinsic_path)
 
         num_scales = min(int(math.log2(self.width)), int(math.log2(self.height)))
@@ -253,6 +268,7 @@ class StereoDatasetBase(Dataset):
             extrinsics = self.extrinsicLoader(item['extrinsic_path'])
 
         for i, frame_idx in enumerate(sorted(self.frame_idxs)):
+            
             curitem = item[str(frame_idx)]
             sample[('color', frame_idx, 'l')] = self.Loader(curitem['left_image_path'])
             sample[('color', frame_idx, 'r')] = self.Loader(curitem['right_image_path'])
@@ -294,9 +310,7 @@ class StereoDatasetBase(Dataset):
                 sample[('forward_flow_gt', frame_idx, 'l')] = self.flowLoader(curitem['left_forward_flow_path'])
             if i < len(self.frame_idxs)-1 and 'right_forward_flow_path' in curitem.keys() and self.with_flow_gt:
                 sample[('forward_flow_gt', frame_idx, 'r')] = self.flowLoader(curitem['right_forward_flow_path'])
-
         sample = self.do_transform(sample)
-
         return sample
 
     def __len__(self):
