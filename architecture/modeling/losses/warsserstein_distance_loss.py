@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from detectron2.config import configurable
 from typing import Optional, Dict, Tuple, Union, List
 import warnings
-
+import numpy as np
 
 class WarssersteinDistanceLoss(object):
     """
@@ -109,7 +109,8 @@ class WarssersteinDistanceLoss(object):
         for i, loss_per_level in enumerate(loss_all_level):
             name = "wars_loss_lvl{}".format(i)
             weighted_loss_all_level[name] = self.weights[i] * loss_per_level * self.global_weight
-
+            if np.isnan(loss_per_level.detach().cpu().numpy()):
+                import pdb; pdb.set_trace()
         return weighted_loss_all_level
 
     def __repr__(self):

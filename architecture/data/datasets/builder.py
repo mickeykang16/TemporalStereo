@@ -66,10 +66,10 @@ if __name__ == '__main__':
     args.config_file = '/home/jaeyoung/ws/TemporalEventStereo/projects/TemporalStereo/configs/mvsec_4.yaml'
     cfg = get_cfg(args)
 
-    dataset = build_stereo_dataset(cfg.DATA.TRAIN, 'train')
-    # dataset = build_stereo_dataset(cfg.DATA.VAL, 'val')
+    # dataset = build_stereo_dataset(cfg.DATA.TRAIN, 'train')
+    dataset = build_stereo_dataset(cfg.DATA.VAL, 'val')
     print(dataset)
-
+    breakpoint()
     print("Dataset contains {} items".format(len(dataset)))
     idxs = [0, ] # 100, 1000]
     for i in range(len(dataset)):

@@ -1,5 +1,5 @@
 LOG_DIR: "./exps/"
-FRAME_IDXS: [-3, -2, -1, 0, ]
+FRAME_IDXS: [0, ]
 MAX_DISP: 37
 
 CHECKPOINT:
@@ -10,11 +10,11 @@ TRAINER:
   NAME: "TemporalStereo"
   NUM_GPUS: 1
   GRADIENT_CLIP_VAL: 0.1
-  VERSION: "mvsec/pose_compare+"
+  VERSION: "mvsec/single_compare+"
   MAX_EPOCHS: 16
   CHECK_VAL_EVERY_N_EPOCHS: 2
   LOG_EVERY_N_STEPS: 20
-  # LOAD_FROM_CHECKPOINT: "exps/TemporalStereo/mvsec/quad_pose_compare/epoch=015.ckpt"
+  # LOAD_FROM_CHECKPOINT: "/home/user/jaeyoung/ws/TemporalEventStereo/exps/TemporalStereo/mvsec/quad_single_compare/epoch=015.ckpt"
 
 SCHEDULER:
   TYPE: 'MultiStepLR'
@@ -86,7 +86,7 @@ DATA:
     HEIGHT: 256
     WIDTH: 336
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-3, -2, -1, 0, ]
+    FRAME_IDXS: [0, ]
   VAL:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
@@ -99,7 +99,7 @@ DATA:
     HEIGHT: 272
     WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-3, -2, -1, 0, ]
+    FRAME_IDXS: [0, ]
   TEST:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
@@ -112,8 +112,9 @@ DATA:
     HEIGHT: 272
     WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [-3, -2, -1, 0, ]
+    FRAME_IDXS: [0, ]
 
 VAL:
   DO_OCCLUSION_EVALUATION: False
   UPPERBOUND: 36
+

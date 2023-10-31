@@ -19,10 +19,11 @@ RUN apt-get -y install net-tools
 RUN mkdir -p /home/jaeyoung/data
 RUN mkdir -p /home/jaeyoung/ws
 ADD ../requirements.txt /home/jaeyoung/requirements.txt
+ADD ../.tmux.conf ~/.tmux.conf
+RUN apt-get -y install tmux
 
 WORKDIR /home/jaeyoung/ws/TemporalEventStereo
 RUN pip install -r ../../requirements.txt
-
 # CMD python3 -m debugpy --listen 0.0.0.0:5678 /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/dist_train.py --config-file /home/jaeyoung/ws/TemporalStereo/projects/TemporalStereo/configs/kitti2015-pair.yaml
 # ENV CUDA_VISIBLE_DEVICES 4,5,6,7
 RUN apt-get install htop

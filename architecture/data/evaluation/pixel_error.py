@@ -49,7 +49,6 @@ def calc_error(est_disp=None, gt_disp=None, lb=None, ub=None):
             '5px': error5 * 100,
             'epe': epe
         }
-
     gt_disp = gt_disp[mask]
     est_disp = est_disp[mask]
 

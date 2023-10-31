@@ -71,11 +71,11 @@ def read_mvsec_extrinsic(extrinsic_fn):
 
 
 def read_mvsec_png_disparity(disp_fn, K=np.zeros((4, 4)), b=0.1):
-
     disp = cv2.imread(disp_fn, cv2.IMREAD_ANYDEPTH|cv2.IMREAD_ANYCOLOR)
+    disp = disp / 7.0
     # uint8
     valid_mask = disp > 0
-    disp = disp / 256.0
+    # disp = disp / 256.0
 
     f = K[0, 0]
     # b = 0.0882308457599 # meter
