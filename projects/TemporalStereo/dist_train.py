@@ -105,8 +105,9 @@ if __name__ == "__main__":
         accumulate_grad_batches=1,
         fast_dev_run=False,
         log_every_n_steps=cfg.TRAINER.LOG_EVERY_N_STEPS
-        # limit_train_batches=0.002, 
-        # limit_val_batches=0.0, 
+        # ,
+        # limit_train_batches=0.001,
+        # limit_val_batches=0.01, 
         # limit_test_batches=0.005,
     )
 

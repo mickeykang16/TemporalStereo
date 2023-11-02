@@ -74,7 +74,8 @@ class WarssersteinDistanceLoss(object):
         # warsserstein distance loss
         # sum{ (0.2 + 0.8*P(d)) * | d* - (d + delta)| }
         war_loss = ((estProb*1.0 + 0.25) * torch.abs(estOffset + dispSample - scaled_gtDisp) * mask.float()).sum(dim=1).mean()
-
+        if np.isnan(war_loss.detach().cpu().numpy()):
+            import pdb; pdb.set_trace()
         return war_loss
 
     def __call__(self, estCosts, estOffsets, dispSamples, gtDisp):
@@ -109,8 +110,7 @@ class WarssersteinDistanceLoss(object):
         for i, loss_per_level in enumerate(loss_all_level):
             name = "wars_loss_lvl{}".format(i)
             weighted_loss_all_level[name] = self.weights[i] * loss_per_level * self.global_weight
-            if np.isnan(loss_per_level.detach().cpu().numpy()):
-                import pdb; pdb.set_trace()
+            
         return weighted_loss_all_level
 
     def __repr__(self):

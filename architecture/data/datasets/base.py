@@ -105,6 +105,7 @@ class StereoDatasetBase(Dataset):
             H, W = sample[('color', 0, 'l')].shape[-2], sample[('color', 0, 'l')].shape[-1]
         # color augmentation, to tensor, normalize
         if self.is_image:
+            breakpoint()
             for key in list(sample):
                 value = sample[key]
                 if 'color' in key:
@@ -145,12 +146,12 @@ class StereoDatasetBase(Dataset):
         ch = 0; cw = 0; pad_left = 0; pad_right = 0; pad_top = 0; pad_bottom = 0
         if self.height == H and self.width == W:
             return sample
-        elif self.is_train:
+        elif self.is_train and self.is_image:
+            breakpoint()
             assert W >= self.width and H >= self.height, "Image size: ({}, {}) cannot crop to ({}, {})".format(W, H, self.width, self.height)
             ch = random.randint(0, H - self.height)
             cw = random.randint(0, W - self.width)
-
-        elif not self.is_train:
+        elif not self.is_train or not self.is_image:
             assert W <= self.width and H <= self.height, "Image size: ({}, {}) cannot pad to ({}, {})".format(W, H, self.width, self.height)
             pad_left = 0
             pad_right = self.width - W
@@ -161,6 +162,7 @@ class StereoDatasetBase(Dataset):
         for key in list(sample):
             value = sample[key]
             if self.is_train and self.is_image:
+                breakpoint()
                 # random crop
                 _include_keys = ['color', 'color_aug', 'disp_gt', 'depth_gt', 'backward_flow_gt', 'forward_flow_gt']
                 if key[0] in _include_keys:
@@ -196,6 +198,12 @@ class StereoDatasetBase(Dataset):
                     value = torch.nn.functional.interpolate(value, size=(self.height, self.width), mode='bilinear', align_corners=True)
                     value = value.squeeze(dim=0)
                     sample[(name, frame_idx, side)] = value
+                    if frame_idx == 0 and side == 'l':
+                        sample[('pad_left', frame_idx, side)] = pad_left
+                        sample[('pad_right', frame_idx, side)] = pad_right
+                        sample[('pad_top', frame_idx, side)] = pad_top
+                        sample[('pad_bottom', frame_idx, side)] = pad_bottom
+
 
         return sample
 

@@ -7,16 +7,43 @@ from tqdm import tqdm
 import random
 random.seed(1)
 
+# For test we use same frames as
+# "Realtime Time Synchronized Event-based Stereo"
+# by Alex Zhu et al. for consistency of test results.
+FRAMES_FILTER_FOR_TEST = {
+    'indoor_flying': {
+        1: list(range(140, 1201)),
+        2: list(range(120, 1421)),
+        3: list(range(73, 1616)),
+        4: list(range(190, 290))
+    }
+}
 
-def getMvsecMetas(root, data_type, num_view):
+# For the training we use different frames, since we found
+# that frames recomended by "Realtime Time Synchronized
+# Event-based Stereo" by Alex Zhu include some still frames.
+FRAMES_FILTER_FOR_TRAINING = {
+    'indoor_flying': {
+        1: list(range(80, 1260)),
+        2: list(range(160, 1580)),
+        3: list(range(125, 1815)),
+        4: list(range(190, 290))
+    }
+}
+NUM_VALIDATION = 200
+
+def getMvsecMetas(root, data_type, num_view, voxel_size):
     assert num_view >=1 and num_view <= 11, num_view
 
     Metas = []
     sequence_name = 'indoor_flying'
+    
     if 'train' in data_type:
         seqs = [1, 2]
-    elif 'test' in data_type:
+        frame_filter = FRAMES_FILTER_FOR_TRAINING
+    elif 'test' in data_type or 'val' in data_type:
         seqs = [3]
+        frame_filter = FRAMES_FILTER_FOR_TEST
     else:
         raise TypeError(data_type)
 
@@ -25,8 +52,13 @@ def getMvsecMetas(root, data_type, num_view):
         assert osp.exists(osp.join(root, sequence_dir_path))
         maxSeqId = len(os.listdir(osp.join(root, sequence_dir_path, 'image0')))
 
+        seq_start = frame_filter['indoor_flying'][seqnum][0]
+        seq_end = frame_filter['indoor_flying'][seqnum][-1]
+
         for iteration in range(0, maxSeqId):
-            if iteration < num_view - 1:
+            if iteration < seq_start + num_view -1:
+                continue
+            elif iteration > seq_end:
                 continue
 
             extrinsicPath = osp.join(sequence_dir_path, 'odometry.txt')
@@ -44,10 +76,10 @@ def getMvsecMetas(root, data_type, num_view):
                 dispName = f'{seqId6}.png'
                 meta[vid] = dict(
                     left_image_path = osp.join(
-                        sequence_dir_path, 'num5voxel0', imgName
+                        sequence_dir_path, f'num{voxel_size}voxel0', imgName
                     ),
                     right_image_path=osp.join(
-                        sequence_dir_path, 'num5voxel1', imgName
+                        sequence_dir_path, f'num{voxel_size}voxel1', imgName
                     ),
                 )
 
@@ -56,11 +88,15 @@ def getMvsecMetas(root, data_type, num_view):
                 )
 
             Metas.append(meta)
-
+    
+    if 'val' in data_type:
+        Metas = Metas[:NUM_VALIDATION]
+    elif 'test' in data_type:
+        Metas = Metas[NUM_VALIDATION:]
     return Metas
 
 
-def build_annoFile(root, save_annotation_root, view_num, phase):
+def build_annoFile(root, save_annotation_root, view_num, phase, voxel):
     """
     Build annotation files for MVSEC Dataset.
     Args:
@@ -70,7 +106,7 @@ def build_annoFile(root, save_annotation_root, view_num, phase):
     assert osp.exists(root), 'Path: {} not exists!'.format(root)
     os.makedirs(save_annotation_root, exist_ok=True)
 
-    Metas = getMvsecMetas(root, phase, view_num)
+    Metas = getMvsecMetas(root, phase, view_num, voxel)
 
     for meta in tqdm(Metas):
         for k, v in meta.items():
@@ -85,7 +121,7 @@ def build_annoFile(root, save_annotation_root, view_num, phase):
     print(info_str)
 
     def make_json(name, metas):
-        filepath = osp.join(save_annotation_root, 'view_' + '{}'.format(view_num) + '_' + name + '.json')
+        filepath = osp.join(save_annotation_root, 'view_' + '{}'.format(view_num) + '_' + name + '_v{}'.format(voxel) + '.json')
         print('Save to {}'.format(filepath))
         with open(file=filepath, mode='w') as fp:
             json.dump(metas, fp=fp)
@@ -118,7 +154,13 @@ if __name__ == '__main__':
         default='train',
         help="sequence",
         type=str,
+        choices=['test', 'train', 'val']
     )
-
+    parser.add_argument(
+        "--voxel",
+        default=5,
+        type=int,
+        choices=[5, 7, 10]
+    )
     args = parser.parse_args()
-    build_annoFile(args.data_root, args.save_annotation_root, args.view_num, args.phase)
+    build_annoFile(args.data_root, args.save_annotation_root, args.view_num, args.phase, args.voxel)

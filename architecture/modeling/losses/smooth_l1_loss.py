@@ -68,7 +68,8 @@ class DispSmoothL1Loss(object):
 
         # smooth l1 loss
         loss = F.smooth_l1_loss(estDisp[mask], scaled_gtDisp[mask], reduction='mean')
-
+        if np.isnan(loss.detach().cpu().numpy()):
+                import pdb; pdb.set_trace()
         return loss
 
     def __call__(self, estDisp, gtDisp):
@@ -90,8 +91,7 @@ class DispSmoothL1Loss(object):
         for i, loss_per_level in enumerate(loss_all_level):
             name = "l1_loss_lvl{}".format(i)
             weighted_loss_all_level[name] = self.weights[i] * loss_per_level * self.global_weight
-            if np.isnan(loss_per_level.detach().cpu().numpy()):
-                import pdb; pdb.set_trace()
+            
         return weighted_loss_all_level
 
     def __repr__(self):

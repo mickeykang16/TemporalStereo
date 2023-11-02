@@ -1,6 +1,6 @@
 LOG_DIR: "./exps/"
-FRAME_IDXS: [0, ]
-MAX_DISP: 48
+FRAME_IDXS: [-3, -2, -1, 0, ]
+MAX_DISP: 37
 
 CHECKPOINT:
   EVERY_N_TRAIN_STEPS: 0
@@ -10,11 +10,11 @@ TRAINER:
   NAME: "TemporalStereo"
   NUM_GPUS: 1
   GRADIENT_CLIP_VAL: 0.1
-  VERSION: "mvsec/single_36.4"
-  MAX_EPOCHS: 20
+  VERSION: "mvsec/pose_compare_test"
+  MAX_EPOCHS: 1
   CHECK_VAL_EVERY_N_EPOCHS: 1
-  LOG_EVERY_N_STEPS: 40
-  # LOAD_FROM_CHECKPOINT: "/home/user/jaeyoung/ws/TemporalEventStereo/exps/TemporalStereo/mvsec/quad_single_compare/epoch=015.ckpt"
+  LOG_EVERY_N_STEPS: 20
+  # LOAD_FROM_CHECKPOINT: "exps/TemporalStereo/mvsec/pose_pad/epoch=007.ckpt"
 
 SCHEDULER:
   TYPE: 'MultiStepLR'
@@ -25,12 +25,12 @@ SCHEDULER:
 OPTIMIZER:
   TYPE: 'RMSProp'
   RMSPROP:
-    LR: 1e-4
+    LR: 8e-5
 
 MODEL:
-  WITH_PREVIOUS: False
+  WITH_PREVIOUS: True
   PREVIOUS_WITH_GRADIENT: False
-  USE_PAST_COST: False
+  USE_PAST_COST: True
   LOCAL_MAP_SIZE: 3
   BACKBONE:
     NAME: "TEMPORALSTEREO"
@@ -66,12 +66,12 @@ MODEL:
       GLOBAL_WEIGHT: 1.0
       WEIGHTS: [2.0, 1.0, 0.7, 0.5]
       SPARSE: True
-      MAX_DISP: 36.4
+      MAX_DISP: 36
     WARSSERSTEIN_DISTANCE_LOSS:
       GLOBAL_WEIGHT: 2.0
       WEIGHTS: [1.0, 0.7, 0.5]
       SPARSE: True
-      MAX_DISP: 36.4
+      MAX_DISP: 36
 
 DATA:
   TRAIN:
@@ -81,21 +81,25 @@ DATA:
     ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_train_v5.json"
     BATCH_SIZE: 2
     NUM_WORKERS: 12
+    USE_COMMON_INTRINSICS: False
+    DO_SAME_LR_TRANSFORM: False
     HEIGHT: 272
     WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
   VAL:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
     DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset"
     ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_val_v5.json"
     BATCH_SIZE: 2
-    NUM_WORKERS: 8
+    NUM_WORKERS: 4
+    USE_COMMON_INTRINSICS: False
+    DO_SAME_LR_TRANSFORM: True
     HEIGHT: 272
     WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
   TEST:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
@@ -103,12 +107,13 @@ DATA:
     ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_test_v5.json"
     BATCH_SIZE: 2
     NUM_WORKERS: 8
+    USE_COMMON_INTRINSICS: False
+    DO_SAME_LR_TRANSFORM: True
     HEIGHT: 272
     WIDTH: 352
     # FRAME_IDXS: [-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, ]
-    FRAME_IDXS: [0, ]
+    FRAME_IDXS: [-3, -2, -1, 0, ]
 
 VAL:
   DO_OCCLUSION_EVALUATION: False
-  UPPERBOUND: 36.4
-
+  UPPERBOUND: 37

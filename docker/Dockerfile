@@ -29,6 +29,8 @@ RUN pip install -r ../../requirements.txt
 RUN apt-get install htop
 RUN pip install wandb
 RUN pip install pillow==9.0.1
+RUN apt-get install -y xclip
+RUN echo "alias tn='. run_tmux.sh'" >> ~/.bashrc
 # RUN cd .
 # $ git clone https://github.com/NVIDIA/apex
 # $ cd apex

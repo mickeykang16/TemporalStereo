@@ -3,4 +3,5 @@
 python3 ./gen_mvsec_anns.py \
     --data-root /home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset\
     --save-annotation-root /home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset\
-    --phase train
+    --phase test\
+    --voxel 7 

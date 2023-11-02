@@ -52,11 +52,11 @@ class TemporalStereo(pl.LightningModule):
         self.logger.filewriter.set_num_total_steps(len(dataset) // self.cfg.DATA.TRAIN.BATCH_SIZE * self.cfg.TRAINER.MAX_EPOCHS)
         self.logger.filewriter.set_start_time(time.time())
 
-        if 'mvsec' in self.cfg.DATA.TRAIN.TYPE.lower():
-            do_shuffle = False
-        else:
-            do_shuffle = True
-        
+        # if 'mvsec' in self.cfg.DATA.TRAIN.TYPE.lower():
+        #     do_shuffle = False
+        # else:
+        #     do_shuffle = True
+        do_shuffle = True
         dataloader = DataLoader(
             dataset, self.cfg.DATA.TRAIN.BATCH_SIZE, shuffle=do_shuffle,
             num_workers=self.cfg.DATA.TRAIN.NUM_WORKERS, pin_memory=True, drop_last=False)
@@ -130,12 +130,27 @@ class TemporalStereo(pl.LightningModule):
 
     def on_train_epoch_start(self) -> None:
         pass
+    def remove_padding(self, batch, outputs):
+        pad_left = batch[('pad_left', 0, 'l')][0]
+        pad_right = batch[('pad_right', 0, 'l')][0]
+        pad_top = batch[('pad_top', 0, 'l')][0]
+        pad_bottom = batch[('pad_bottom', 0, 'l')][0]
+        full_h, full_w = batch[('color_aug', 0, 'l')].shape[-2:]
+        h = full_h - pad_top - pad_bottom
+        w = full_w - pad_left - pad_right
+        disp_no_pad = []
+        for disp in outputs[('disps', 0, 'l')]:
+            assert disp.shape[-2] == full_h and disp.shape[-1] == full_w
+            disp_no_pad.append(disp[... , pad_top:full_h - pad_bottom, pad_left:full_w - pad_right])
+        outputs[('disps', 0, 'l')] = disp_no_pad
 
     def training_step(self, batch, batch_idx):
         # self._assert_bn_freezed()
         losses = {}
         before_op_time = time.time()
         outputs = self.multi_frame_forward(batch, is_train=True)
+        # remove padding from disparity prediction
+        self.remove_padding(batch, outputs)
         for frame_idx in self.frame_idxs:
             if not self.previous_with_gradient and frame_idx != 0:
                 continue
@@ -166,14 +181,15 @@ class TemporalStereo(pl.LightningModule):
             self.logger.filewriter.log_time(self.global_step, self.current_epoch, batch_idx,
                                             self.cfg.DATA.TRAIN.BATCH_SIZE, duration, losses["loss"])
         # randomly visulize some batch
-        if self.global_step % 2000 == 0:
+        if self.global_step % 1000 == 0:
             self.log_image(self.cfg.DATA.VAL.BATCH_SIZE, batch, outputs, prefix='train_')
 
         return {"loss": losses['loss']}
 
     def validation_step(self, batch, batch_idx):
         outputs = self.multi_frame_forward(batch, is_train=False)
-
+        # remove padding from disparity prediction
+        self.remove_padding(batch, outputs)
         # remove padding
         gh, gw = batch[('disp_gt', 0, 'l')].shape[-2:]
 
@@ -185,7 +201,6 @@ class TemporalStereo(pl.LightningModule):
             outputs[('disps', 0, 'l')].append(outputs[('disp_warp_gt', 0, 'l')])
 
         outputs[('disps', 0, 'l')] = [F.interpolate(disp * gw / disp.shape[-1], size=(gh, gw), mode='bilinear', align_corners=True) for disp in outputs[('disps', 0, 'l')]]
-
         whole_error_dict = self.log_metric(batch, outputs)
 
         self.log_dict(whole_error_dict, logger=True, on_epoch=True, reduce_fx=torch.mean)
@@ -203,7 +218,8 @@ class TemporalStereo(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         outputs = self.multi_frame_forward(batch, is_train=False)
-
+        # remove padding from disparity prediction
+        self.remove_padding(batch, outputs)
         # remove padding
         gh, gw = batch[('disp_gt', 0, 'l')].shape[-2:]
         outputs[('disps', 0, 'l')] = [F.interpolate(disp * gw / disp.shape[-1], size=(gh, gw), mode='bilinear', align_corners=True) for disp in outputs[('disps', 0, 'l')]]
