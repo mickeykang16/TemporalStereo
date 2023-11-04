@@ -280,7 +280,7 @@ if __name__ == '__main__':
         dataset,
         log_dir,
         device,
-        perform_visualization=True,
+        perform_visualization=False,
     )
 
     print("Done!")

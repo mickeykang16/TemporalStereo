@@ -32,17 +32,25 @@ FRAMES_FILTER_FOR_TRAINING = {
 }
 NUM_VALIDATION = 200
 
-def getMvsecMetas(root, data_type, num_view, voxel_size):
+def getMvsecMetas(root, data_type, num_view, voxel_size, split):
     assert num_view >=1 and num_view <= 11, num_view
 
     Metas = []
     sequence_name = 'indoor_flying'
     
+
     if 'train' in data_type:
-        seqs = [1, 2]
+        if split == 1:
+            seqs = [2, 3]
+        elif split == 2:
+            seqs = [1, 3]
+        elif split == 3:
+            seqs = [1, 2]
+        else:
+            return
         frame_filter = FRAMES_FILTER_FOR_TRAINING
     elif 'test' in data_type or 'val' in data_type:
-        seqs = [3]
+        seqs = [split]
         frame_filter = FRAMES_FILTER_FOR_TEST
     else:
         raise TypeError(data_type)
@@ -89,14 +97,14 @@ def getMvsecMetas(root, data_type, num_view, voxel_size):
 
             Metas.append(meta)
     
-    if 'val' in data_type:
-        Metas = Metas[:NUM_VALIDATION]
-    elif 'test' in data_type:
-        Metas = Metas[NUM_VALIDATION:]
+    # if 'val' in data_type:
+    #     Metas = Metas[:NUM_VALIDATION]
+    # elif 'test' in data_type:
+    #     Metas = Metas[NUM_VALIDATION:]
     return Metas
 
 
-def build_annoFile(root, save_annotation_root, view_num, phase, voxel):
+def build_annoFile(root, save_annotation_root, view_num, phase, voxel, split, shuffle):
     """
     Build annotation files for MVSEC Dataset.
     Args:
@@ -106,7 +114,7 @@ def build_annoFile(root, save_annotation_root, view_num, phase, voxel):
     assert osp.exists(root), 'Path: {} not exists!'.format(root)
     os.makedirs(save_annotation_root, exist_ok=True)
 
-    Metas = getMvsecMetas(root, phase, view_num, voxel)
+    Metas = getMvsecMetas(root, phase, view_num, voxel, split)
 
     for meta in tqdm(Metas):
         for k, v in meta.items():
@@ -121,12 +129,20 @@ def build_annoFile(root, save_annotation_root, view_num, phase, voxel):
     print(info_str)
 
     def make_json(name, metas):
-        filepath = osp.join(save_annotation_root, 'view_' + '{}'.format(view_num) + '_' + name + '_v{}'.format(voxel) + '.json')
+        filepath = osp.join(save_annotation_root, 'view_' + '{}'.format(view_num) + 
+                '_' + name + '_v{}'.format(voxel) + '_split{}'.format(split) 
+                + '{}'.format('_shuffle' if shuffle and 'test' in phase else '') +'.json')
         print('Save to {}'.format(filepath))
         with open(file=filepath, mode='w') as fp:
             json.dump(metas, fp=fp)
-
-    make_json(name=phase, metas=Metas)
+    if 'train' in phase:
+        make_json(name=phase, metas=Metas)
+    elif 'test' in phase:
+        if shuffle:
+            random.shuffle(Metas)
+            print("Shuffle Data before Validation-Test Split")
+        make_json(name='val', metas=Metas[:NUM_VALIDATION])
+        make_json(name='test', metas=Metas[NUM_VALIDATION:])
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="mvsec Data PreProcess.")
@@ -154,7 +170,7 @@ if __name__ == '__main__':
         default='train',
         help="sequence",
         type=str,
-        choices=['test', 'train', 'val']
+        choices=['test', 'train']
     )
     parser.add_argument(
         "--voxel",
@@ -162,5 +178,16 @@ if __name__ == '__main__':
         type=int,
         choices=[5, 7, 10]
     )
+    parser.add_argument(
+        "--split",
+        default=1,
+        type=int,
+        choices=[1, 2, 3]
+    )
+    parser.add_argument(
+        "--shuffle",
+        default=False,
+        type=bool
+    )
     args = parser.parse_args()
-    build_annoFile(args.data_root, args.save_annotation_root, args.view_num, args.phase, args.voxel)
+    build_annoFile(args.data_root, args.save_annotation_root, args.view_num, args.phase, args.voxel, args.split, args.shuffle)

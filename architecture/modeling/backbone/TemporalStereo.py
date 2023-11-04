@@ -59,7 +59,8 @@ class TEMPORALSTEREO(Backbone):
 
         net = timm.create_model('efficientnetv2_rw_s', pretrained=True)
         self.conv_stem = net.conv_stem
-        self.conv_stem_event = Conv2d(5, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        self.conv_stem_event_5 = Conv2d(5, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        self.conv_stem_event_7 = Conv2d(7, 24, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
         self.bn1 = net.bn1
         self.act1 = net.act1
 
@@ -103,7 +104,9 @@ class TEMPORALSTEREO(Backbone):
         out_memories = []
         # [B, 24, H//2, W//2]
         if x.shape[1] == 5:
-            x = self.act1(self.bn1(self.conv_stem_event(x)))    
+            x = self.act1(self.bn1(self.conv_stem_event_5(x)))
+        elif x.shape[1] == 7:
+            x = self.act1(self.bn1(self.conv_stem_event_7(x)))
         else:
             x = self.act1(self.bn1(self.conv_stem(x)))
         # [B, 24, H//2, W//2]

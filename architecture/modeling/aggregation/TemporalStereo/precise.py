@@ -38,7 +38,8 @@ class PreciseAggregation(nn.Module):
         self.pred_heads = PredictionHeads(in_planes=C, delta=delta, norm=norm, activation=activation)
 
         self.refinement = UNet(in_planes=3, out_planes=in_planes)
-        self.refinement_event = UNet(in_planes=5, out_planes=in_planes)
+        self.refinement_event_5 = UNet(in_planes=5, out_planes=in_planes)
+        self.refinement_event_7 = UNet(in_planes=7, out_planes=in_planes)
         self.weight_init()
 
     def weight_init(self):
@@ -81,7 +82,9 @@ class PreciseAggregation(nn.Module):
     def forward(self, left, right, low_disparity, high_disparity, left_image, right_image, prev_info:dict):
         B, _, H, W = left.shape
         if left_image.shape[1] == 5:
-            spx_left_feats, spx_right_feats = self.refinement_event.encoder(left_image, right_image)
+            spx_left_feats, spx_right_feats = self.refinement_event_5.encoder(left_image, right_image)
+        elif left_image.shape[1] == 7:
+            spx_left_feats, spx_right_feats = self.refinement_event_7.encoder(left_image, right_image)
         else:
             spx_left_feats, spx_right_feats = self.refinement.encoder(left_image, right_image)
         spx2l, spx4l = spx_left_feats
