@@ -61,8 +61,11 @@ class StereoDatasetBase(Dataset):
         self.with_disp_gt = False
         self.with_flow_gt = False
         self.with_pose_gt = False
-
         self.is_image = True
+        self.memory = {}
+        self.prev_item_idx = 0
+        self.use_memory = False
+
     def build_transform(self):
         self.img_loader = pil_loader
         # get an Tensor; if is ByteTensor, it will be normailzed to [0, 1]
@@ -199,10 +202,10 @@ class StereoDatasetBase(Dataset):
                     value = value.squeeze(dim=0)
                     sample[(name, frame_idx, side)] = value
                     if frame_idx == 0 and side == 'l':
-                        sample[('pad_left', frame_idx, side)] = pad_left
-                        sample[('pad_right', frame_idx, side)] = pad_right
-                        sample[('pad_top', frame_idx, side)] = pad_top
-                        sample[('pad_bottom', frame_idx, side)] = pad_bottom
+                        sample[('pad_left', side)] = pad_left
+                        sample[('pad_right', side)] = pad_right
+                        sample[('pad_top', side)] = pad_top
+                        sample[('pad_bottom', side)] = pad_bottom
 
 
         return sample
@@ -234,13 +237,23 @@ class StereoDatasetBase(Dataset):
     def intrinsicLoader(self, intrinsic_path):
         raise NotImplementedError
 
+    def get_sample_from_memory(self, sample):
+        for i, key in enumerate(self.memory.keys()):
+            if len(key) == 3:
+                if key[1]-1 in self.frame_idxs:
+                    sample[(key[0], key[1]-1, key[2])] = self.memory[key]
+        return sample
+
     def __getitem__(self, idx):
+        # for sequential data, not in trainig phase, not the first item, we can use the previous item
+        can_use_memory = (self.use_memory) and (not self.is_image) and (not self.is_train) \
+            and (self.memory is not None) and (self.prev_item_idx + 1 == idx)
+        
         # import pdb; pdb.set_trace()
         sample = {}
         item = self.data_list[idx]
         # baseline
         sample['baseline'] = torch.Tensor([self.baseline, ]).float().unsqueeze(dim=0).unsqueeze(dim=0)
-
         # intrinsics
         # modify it if intrinsic path is different for each image
         if 'intrinsic_path' in item.keys():
@@ -269,14 +282,18 @@ class StereoDatasetBase(Dataset):
 
             sample[('K', scale)] = torch.from_numpy(scale_K).float()
             sample[('inv_K', scale)] = torch.from_numpy(inv_scale_K).float()
-
         # extrinsics
         extrinsics = None
         if self.with_pose_gt and 'extrinsic_path' in item:
             extrinsics = self.extrinsicLoader(item['extrinsic_path'])
 
+        # Bring from previous data, this expects to reduce disk io delay
+        if can_use_memory:
+            sample = self.get_sample_from_memory(sample)
         for i, frame_idx in enumerate(sorted(self.frame_idxs)):
-            
+            if (can_use_memory and frame_idx != 0):
+                continue
+
             curitem = item[str(frame_idx)]
             sample[('color', frame_idx, 'l')] = self.Loader(curitem['left_image_path'])
             sample[('color', frame_idx, 'r')] = self.Loader(curitem['right_image_path'])
@@ -319,6 +336,8 @@ class StereoDatasetBase(Dataset):
             if i < len(self.frame_idxs)-1 and 'right_forward_flow_path' in curitem.keys() and self.with_flow_gt:
                 sample[('forward_flow_gt', frame_idx, 'r')] = self.flowLoader(curitem['right_forward_flow_path'])
         sample = self.do_transform(sample)
+        self.prev_item_idx = idx
+        self.memory = sample
         return sample
 
     def __len__(self):

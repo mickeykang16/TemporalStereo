@@ -5,6 +5,10 @@ import yaml
 def np_loader(image_path):
     voxel = np.load(image_path)
     assert voxel.ndim == 3
+    # num_voxel_channel = voxel.shape[0]
+    # vi = np.random.choice(num_voxel_channel, num_voxel_channel, replace=False)
+    # return voxel[vi, : :].copy()
+    # return voxel[::-1, :, :].copy()
     return voxel
 
 def read_mvsec_intrinsic(intrinsic_fn):
@@ -60,9 +64,8 @@ def read_mvsec_extrinsic(extrinsic_fn):
             matrix = matrix.reshape(3, 4)
             matrix = np.concatenate((matrix, np.array([[0, 0, 0, 1]])), axis=0)
             item = {
-                # inverse pose
-                key: np.linalg.pinv(matrix),
-                inv_key: matrix,
+                key: matrix,
+                inv_key: np.linalg.pinv(matrix),
             }
             data['Frame{}:{}'.format(frame, camera)] = item
             lineid += 1
