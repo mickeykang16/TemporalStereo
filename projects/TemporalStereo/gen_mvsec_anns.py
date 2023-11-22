@@ -141,8 +141,10 @@ def build_annoFile(root, save_annotation_root, view_num, phase, voxel, split, sh
         if shuffle:
             random.shuffle(Metas)
             print("Shuffle Data before Validation-Test Split")
-        make_json(name='val', metas=Metas[:NUM_VALIDATION])
-        make_json(name='test', metas=Metas[NUM_VALIDATION:])
+        val_meta = Metas[:NUM_VALIDATION]
+        test_meta = Metas[NUM_VALIDATION:]
+        make_json(name='val', metas=val_meta)
+        make_json(name='test', metas=test_meta)
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="mvsec Data PreProcess.")

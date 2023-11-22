@@ -108,7 +108,7 @@ if __name__ == "__main__":
         # ,
         # limit_train_batches=0.001,
         # limit_val_batches=0.01, 
-        # limit_test_batches=0.005,
+        # limit_test_batches=0.1,
     )
 
     # ----------------------------------------- Train ----------------------------------------- #

@@ -6,6 +6,7 @@ import time
 
 from torch.utils.collect_env import get_pretty_env_info
 import PIL
+import math
 
 def get_pil_version():
     return "\n        Pillow ({})".format(PIL.__version__)
@@ -43,7 +44,8 @@ class FileWriter:
         self.set_log_file()
 
         self.set_start_time(time.time())
-
+        self.performance_memory=[]
+        self.debug = {}
     def set_log_file(self, filename="log.txt"):
         os.makedirs(self._save_path, mode=0o777, exist_ok=True)
         self.log_file_path = os.path.join(self._save_path, filename)
@@ -76,7 +78,28 @@ class FileWriter:
                        " | loss: {:.5f} | time elapsed: {} | time left: {}"
         self.stdout(print_string.format(current_epoch, batch_idx, samples_per_sec, loss,
                                   sec_to_hm_str(time_sofar), sec_to_hm_str(training_time_left)))
-
+    @rank_zero_only
+    def show_performance(self):
+        print_every_batch = max(math.floor(len(self.performance_memory)/10), 1)
+        batch_perf_str = "\nBatch {:d} took {:.2f}ms"
+        for batch, perf in enumerate(self.performance_memory):
+            if (batch+1) % print_every_batch == 0:
+                self.stdout(batch_perf_str.format(batch+1, perf))
+        avg_perf = sum(self.performance_memory) / len(self.performance_memory)
+        self.stdout(f'\nAverage: {avg_perf:.2f}ms per batch')
+    @rank_zero_only
+    def show_debug(self):
+        for idx, key in enumerate(self.debug):
+            value = self.debug[key]
+            self.stdout(f'Key: {key} , Value: {value}')
+    @rank_zero_only
+    def save_image(self, path, image):
+        # image_dir_path = os.path.join(self._save_path, path)
+        # os.makedirs(image_dir_path, mode=0o777, exist_ok=True)
+        full_path = os.path.join(self._save_path, path)
+        img = PIL.Image.fromarray(image)
+        img = img.convert("L")
+        img.save(full_path)
 class Logger(TensorBoardLogger):
     def __init__(self, *args, **kwargs):
         super(Logger, self).__init__(*args, **kwargs)

@@ -33,6 +33,7 @@ class TemporalStereo(pl.LightningModule):
         self.cfg = CfgNode(hparams)
         cfg = self.cfg
         self.frame_idxs = cfg.FRAME_IDXS
+        self.frame_idxs.sort()
         self.max_disp = cfg.MAX_DISP
 
         self.with_previous = cfg.MODEL.WITH_PREVIOUS
@@ -131,10 +132,10 @@ class TemporalStereo(pl.LightningModule):
     def on_train_epoch_start(self) -> None:
         pass
     def remove_padding(self, batch, outputs):
-        pad_left = batch[('pad_left', 0, 'l')][0]
-        pad_right = batch[('pad_right', 0, 'l')][0]
-        pad_top = batch[('pad_top', 0, 'l')][0]
-        pad_bottom = batch[('pad_bottom', 0, 'l')][0]
+        pad_left = batch[('pad_left', 'l')][0]
+        pad_right = batch[('pad_right', 'l')][0]
+        pad_top = batch[('pad_top', 'l')][0]
+        pad_bottom = batch[('pad_bottom', 'l')][0]
         full_h, full_w = batch[('color_aug', 0, 'l')].shape[-2:]
         h = full_h - pad_top - pad_bottom
         w = full_w - pad_left - pad_right
@@ -182,7 +183,7 @@ class TemporalStereo(pl.LightningModule):
                                             self.cfg.DATA.TRAIN.BATCH_SIZE, duration, losses["loss"])
         # randomly visulize some batch
         if self.global_step % 1000 == 0:
-            self.log_image(self.cfg.DATA.VAL.BATCH_SIZE, batch, outputs, prefix='train_')
+            self.log_image(self.cfg.DATA.TRAIN.BATCH_SIZE, batch, outputs, prefix='train_')
 
         return {"loss": losses['loss']}
 
@@ -217,6 +218,8 @@ class TemporalStereo(pl.LightningModule):
         self.process_error_dict(outputs)
 
     def test_step(self, batch, batch_idx):
+        starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)   # Time evaluation 
+        starter.record()
         outputs = self.multi_frame_forward(batch, is_train=False)
         # remove padding from disparity prediction
         self.remove_padding(batch, outputs)
@@ -224,15 +227,29 @@ class TemporalStereo(pl.LightningModule):
         gh, gw = batch[('disp_gt', 0, 'l')].shape[-2:]
         outputs[('disps', 0, 'l')] = [F.interpolate(disp * gw / disp.shape[-1], size=(gh, gw), mode='bilinear', align_corners=True) for disp in outputs[('disps', 0, 'l')]]
 
+        ender.record()
+        torch.cuda.synchronize()
+        batch_time = starter.elapsed_time(ender)
+
         whole_error_dict = self.log_metric(batch, outputs)
 
         self.log_dict(whole_error_dict, logger=True, on_epoch=True, reduce_fx=torch.mean)
-
+        self.logger.filewriter.performance_memory.append(batch_time)
+        ###################SAVE IMAGES FOR DEBUGGING###########
+        # THIS DOES NOT AFFECT MEASURED RUNTIME
+        disp_image = outputs[('disps', 0, 'l')][0][0][0] * 7.0
+        img = disp_image
+        for i in range(-3, 1):
+            event_image = batch[('color', i, 'l')][0].sum(axis=0) * 50.0
+            img = torch.concat((event_image, img), axis = 1)
+        img = img.detach().cpu().numpy()
+        # self.logger.filewriter.save_image('batch{:06d}.png'.format(batch_idx), img)
         return whole_error_dict
 
     def test_epoch_end(self, outputs) -> None:
         self.logger.filewriter.stdout("\n\n" + "*"*40 + "  Final Test  " + "*"*40 + "\n")
         self.process_error_dict(outputs)
+        self.logger.filewriter.show_performance()
 
     @rank_zero_only
     def process_error_dict(self, outputs) -> None:
@@ -273,7 +290,7 @@ class TemporalStereo(pl.LightningModule):
     def multi_frame_forward(self, batch, is_train=False):
         final_outputs = {}
         outputs = {}
-        self.frame_idxs.sort()
+        
         for i, timestamp in enumerate(self.frame_idxs):
             self.current_timestamp = timestamp
             # save empty previous at start

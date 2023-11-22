@@ -69,7 +69,7 @@ if __name__ == "__main__":
         monitor=None,
         save_last=True,
         save_top_k=-1,
-        every_n_train_steps=cfg.CHECKPOINT.EVERY_N_TRAIN_STEPS,
+        # every_n_train_steps=cfg.CHECKPOINT.EVERY_N_TRAIN_STEPS,
         every_n_epochs=cfg.CHECKPOINT.EVERY_N_EPOCHS,)
     lr_monitor = LearningRateMonitor(logging_interval='step')
     swa = StochasticWeightAveraging(swa_epoch_start=0.8)
