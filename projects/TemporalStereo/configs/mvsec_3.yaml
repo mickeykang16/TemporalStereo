@@ -10,11 +10,11 @@ TRAINER:
   NAME: "TemporalStereo"
   NUM_GPUS: 1
   GRADIENT_CLIP_VAL: 0.1
-  VERSION: "mvsec/pose3/split3_v7"
+  VERSION: "mvsec/pose3/split3/test2"
   MAX_EPOCHS: 16
   CHECK_VAL_EVERY_N_EPOCHS: 1
   LOG_EVERY_N_STEPS: 40
-  # LOAD_FROM_CHECKPOINT: "exps/TemporalStereo/mvsec/pose3/split3/epoch=013.ckpt"
+  LOAD_FROM_CHECKPOINT: "exps/TemporalStereo/mvsec/pose3/split3/epoch=011.ckpt"
 
 SCHEDULER:
   TYPE: 'MultiStepLR'
@@ -78,7 +78,7 @@ DATA:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
     DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/"
-    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_train_v7_split3.json"
+    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_train_v5_split3.json"
     BATCH_SIZE: 2
     NUM_WORKERS: 4
     USE_COMMON_INTRINSICS: False
@@ -104,8 +104,8 @@ DATA:
     TYPE: "MVSEC"
     # DATA_ROOT: "/home/user/jaeyoung/data/KITTI-2015/"
     DATA_ROOT: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/"
-    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_test_v7_split3_shuffle.json"
-    BATCH_SIZE: 4
+    ANNFILE: "/home/jaeyoung/data/ws/event_stereo_ICCV2019/dataset/view_4_test_v5_split3_shuffle.json"
+    BATCH_SIZE: 8
     NUM_WORKERS: 4
     USE_COMMON_INTRINSICS: False
     DO_SAME_LR_TRANSFORM: True

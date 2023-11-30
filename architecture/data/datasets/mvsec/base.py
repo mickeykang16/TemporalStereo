@@ -19,6 +19,9 @@ class MVSECStereoDatasetBase(StereoDatasetBase):
         self.full_resolution = (260, 346)
 
         self.baseline = 0.0882308457599
+        # Below is right according to the data provider
+        # refer '/home/user/jaeyoung/ws/event_stereo_ICCV2019/tools/convert_mvsec_with_odom.py'
+        # self.baseline = 19.941771812941038
 
         self.with_depth_gt = False
         self.with_disp_gt = True

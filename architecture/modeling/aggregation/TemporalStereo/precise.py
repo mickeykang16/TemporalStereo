@@ -98,14 +98,16 @@ class PreciseAggregation(nn.Module):
         raw_cost = block_cost(left, right, disp_sample, block_cost_scale=self.block_cost_scale)
 
         init_cost = self.init3d(raw_cost)
+        # B x D x h x w
         final_cost, off = self.pred_heads(init_cost)
 
         # learn disparity
+        # memory volume has B x topK x h x w
         disp, memory_sample, memory_volume = self.predict_disp(final_cost, disp_sample, off, k=self.topk)
         full_disp = self.refinement.decoder(disp, left, spx2l)
-
         prev_info['prev_disp'] = full_disp.detach()
         # save memory
+        
         prev_info['cost_memory'] = {
             'disp_sample': F.interpolate(memory_sample/2, scale_factor=1/2, mode='bilinear', align_corners=True),
             'cost_volume': F.interpolate(memory_volume, scale_factor=1/2, mode='bilinear', align_corners=True),

@@ -63,9 +63,12 @@ def read_mvsec_extrinsic(extrinsic_fn):
             matrix = np.array([float(values[i]) for i in range(len(values))])
             matrix = matrix.reshape(3, 4)
             matrix = np.concatenate((matrix, np.array([[0, 0, 0, 1]])), axis=0)
+            # matrix = np.eye(4)
             item = {
                 key: matrix,
                 inv_key: np.linalg.pinv(matrix),
+                # inv_key: matrix,
+                # key: np.linalg.pinv(matrix),
             }
             data['Frame{}:{}'.format(frame, camera)] = item
             lineid += 1

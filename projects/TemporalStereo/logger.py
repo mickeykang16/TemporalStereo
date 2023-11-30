@@ -98,8 +98,8 @@ class FileWriter:
         # os.makedirs(image_dir_path, mode=0o777, exist_ok=True)
         full_path = os.path.join(self._save_path, path)
         img = PIL.Image.fromarray(image)
-        img = img.convert("L")
-        img.save(full_path)
+        # img.save(full_path)
+        
 class Logger(TensorBoardLogger):
     def __init__(self, *args, **kwargs):
         super(Logger, self).__init__(*args, **kwargs)

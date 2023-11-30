@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import math
 EXPMAX = 50
-import numpy as np
+
 
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_only
@@ -19,7 +19,7 @@ from architecture.data.datasets import build_stereo_dataset
 from architecture.data.evaluation import do_evaluation, do_occlusion_evaluation
 from architecture.modeling import build_backbone, build_aggregation, DispSmoothL1Loss, WarssersteinDistanceLoss
 from architecture.modeling.layers import project_to_3d, FunctionSoftsplat
-from architecture.utils import disp_to_color, colormap, disp_err_to_colorbar, disp_err_to_color
+from architecture.utils import disp_to_color, colormap, disp_err_to_colorbar
 
 
 class TemporalStereo(pl.LightningModule):
@@ -239,23 +239,11 @@ class TemporalStereo(pl.LightningModule):
         # THIS DOES NOT AFFECT MEASURED RUNTIME
         disp_image = outputs[('disps', 0, 'l')][0][0][0] * 7.0
         img = disp_image
-        for i in range(-2, 1):
-            event_image = batch[('color', i, 'l')][0].sum(axis=0)
+        for i in range(-3, 1):
+            event_image = batch[('color', i, 'l')][0].sum(axis=0) * 50.0
             img = torch.concat((event_image, img), axis = 1)
         img = img.detach().cpu().numpy()
-        img = np.repeat(np.expand_dims(img, -1), 3, axis=2).astype('uint8')
-        self.logger.filewriter.save_image('batch{:06d}.png'.format(batch_idx), img)
-        
-        disp_gt = batch[('disp_gt', 0, 'l')][0][0] * 7.0
-        disp_image = disp_image.detach().cpu().numpy()
-        disp_gt = disp_gt.detach().cpu().numpy()
-        mask = (disp_gt <= 254.0)
-        mask = np.repeat(np.expand_dims(mask, -1), 3, axis=2)
-        error_map = disp_err_to_color(disp_image, disp_gt)
-        error_map *= mask*255.0
-        error_map = error_map.astype('uint8')
-        self.logger.filewriter.save_image('batch{:06d}_error.png'.format(batch_idx), error_map)
-        
+        # self.logger.filewriter.save_image('batch{:06d}.png'.format(batch_idx), img)
         return whole_error_dict
 
     def test_epoch_end(self, outputs) -> None:
@@ -338,9 +326,14 @@ class TemporalStereo(pl.LightningModule):
         """
         bs, c, full_h, full_w = batch[('color_aug', timestamp, 'l')].shape
         prev_info = outputs.get(('prev_info', timestamp-1, 'l'), {})
+        if ((timestamp-1) in self.frame_idxs):
+            prev_info['memories'] = [self.warp_feature(batch, prev_info, mem, timestamp) for mem in prev_info['memories']]
         left_image, right_image = batch[('color_aug', timestamp, 'l')], batch[('color_aug', timestamp, 'r')]
         left_feats, right_feats, prev_info = self.backbone(left_image, right_image, prev_info)
-        # prev_info['memories', ]
+
+        # prev_info['memories'] is a list of 2*B x C' x H' x W'
+        
+        
         if self.with_previous and ((timestamp-1) in self.frame_idxs):
             outs, prev_info = self.update_map(batch, prev_info, timestamp)
             outputs.update(outs)
@@ -374,7 +367,45 @@ class TemporalStereo(pl.LightningModule):
         outputs[('prev_info', timestamp, 'l')] = prev_info
 
         return outputs
+    
+    def warp_feature(self, batch, prev_info, feature, timestamp):
+        baseline = batch['baseline'].float()
+        full_h, full_w = batch[('color_aug', timestamp, 'l')].shape[-2:]
+        K = batch[('K', 0)]
+        # get extrinsic
+        past_inv_T = batch[('inv_T', timestamp - 1, 'l')]
+        now_T = batch[('T', timestamp, 'l')]
+        T_past_to_now = torch.bmm(now_T, past_inv_T)
 
+        sample_b, sample_c, sample_h, sample_w = feature.shape
+
+        # get previous disparity map and intrinsics
+        downscale_factor = full_w / sample_w
+        # get intrinsic
+        down_K = torch.cat((
+            K[:, 0:1, :] / downscale_factor,
+            K[:, 1:2, :] / downscale_factor,
+            K[:, 2:, :],
+        ), dim=1)
+        down_inv_K = torch.inverse(down_K)
+        focal_length = down_K[:, 0, 0].view(-1, 1, 1, 1)
+
+        # get optical flow
+        prev_disp = prev_info['prev_disp'].detach()
+        prev_disp = F.interpolate(prev_disp*sample_w/prev_disp.shape[-1], size=(sample_h, sample_w), mode='bilinear', align_corners=True)
+        prev_depth = baseline * focal_length / (prev_disp + 1e-5)
+        out_project = project_to_3d(prev_depth, down_K, down_inv_K, T_past_to_now)
+        forward_flow = out_project['optical_flow'][:, :2, :, :]
+        
+        forward_flow = forward_flow.repeat(2, 1, 1, 1)
+        prev_disp = prev_disp.repeat(2, 1, 1, 1)
+        warp_feature = FunctionSoftsplat(tenInput=feature,
+                                                tenFlow=forward_flow,
+                                                tenMetric=(prev_disp[:, :1] - prev_disp[:, :1].mean()).clamp(-EXPMAX, EXPMAX), # avoid explosion when exp()
+                                                strType='softmax')
+
+        return warp_feature.detach()
+        
     def update_map(self, batch, prev_info, timestamp):
         outputs = {}
         baseline = batch['baseline'].float()

@@ -90,10 +90,11 @@ class CoarseAggregation(nn.Module):
             memory_sample = memory['disp_sample']
             mh, mw = memory_sample.shape[-2:]
             memory_sample = F.interpolate(memory_sample*W/mw, size=(H, W), mode='bilinear', align_corners=True)
+            # B x topK x h x w
             memory_volume = memory['cost_volume']
             memory_volume = F.interpolate(memory_volume, size=(H, W), mode='bilinear', align_corners=True)
             memory_volume = memory_volume.unsqueeze(dim=1)
-
+        # B x C x topK x h x w
         memory_volume = self.past_conv(memory_volume)
         # [B, D, H, W]
         disp_sample = torch.cat([disp_sample, memory_sample], dim=1)

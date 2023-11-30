@@ -15,6 +15,31 @@ FRAMES_FILTER_FOR_TEST = {
         1: list(range(140, 1201)),
         2: list(range(120, 1421)),
         3: list(range(73, 1616)),
+        # 3: list(range(107, 1750)),
+        4: list(range(190, 290))
+    }
+}
+
+# For the training we use different frames, since we found
+# that frames recomended by "Realtime Time Synchronized
+# Event-based Stereo" by Alex Zhu include some still frames.
+FRAMES_FILTER_FOR_TRAINING_CUSTOM = {
+    'indoor_flying': {
+        1: list(range(80, 1260)),
+        2: list(range(160, 1580)),
+        3: list(range(125, 1815)),
+        4: list(range(190, 290))
+    }
+}
+# For test we use same frames as
+# "Realtime Time Synchronized Event-based Stereo"
+# by Alex Zhu et al. for consistency of test results.
+FRAMES_FILTER_FOR_TEST_CUSTOM = {
+    'indoor_flying': {
+        1: list(range(140, 1201)),
+        2: list(range(120, 1421)),
+        # 3: list(range(73, 1616)),
+        3: list(range(107, 1750)),
         4: list(range(190, 290))
     }
 }
@@ -32,8 +57,8 @@ FRAMES_FILTER_FOR_TRAINING = {
 }
 NUM_VALIDATION = 200
 
-def getMvsecMetas(root, data_type, num_view, voxel_size, split):
-    assert num_view >=1 and num_view <= 11, num_view
+def getMvsecMetas(root, data_type, num_view, voxel_size, split, custom):
+    # assert num_view >=1 and num_view <= 11, num_view
 
     Metas = []
     sequence_name = 'indoor_flying'
@@ -48,10 +73,16 @@ def getMvsecMetas(root, data_type, num_view, voxel_size, split):
             seqs = [1, 2]
         else:
             return
-        frame_filter = FRAMES_FILTER_FOR_TRAINING
+        if custom:
+            frame_filter = FRAMES_FILTER_FOR_TRAINING_CUSTOM
+        else:
+            frame_filter = FRAMES_FILTER_FOR_TRAINING
     elif 'test' in data_type or 'val' in data_type:
         seqs = [split]
-        frame_filter = FRAMES_FILTER_FOR_TEST
+        if custom:
+            frame_filter = FRAMES_FILTER_FOR_TEST_CUSTOM    
+        else:
+            frame_filter = FRAMES_FILTER_FOR_TEST
     else:
         raise TypeError(data_type)
 
@@ -104,7 +135,7 @@ def getMvsecMetas(root, data_type, num_view, voxel_size, split):
     return Metas
 
 
-def build_annoFile(root, save_annotation_root, view_num, phase, voxel, split, shuffle):
+def build_annoFile(root, save_annotation_root, view_num, phase, voxel, split, shuffle, custom):
     """
     Build annotation files for MVSEC Dataset.
     Args:
@@ -114,7 +145,7 @@ def build_annoFile(root, save_annotation_root, view_num, phase, voxel, split, sh
     assert osp.exists(root), 'Path: {} not exists!'.format(root)
     os.makedirs(save_annotation_root, exist_ok=True)
 
-    Metas = getMvsecMetas(root, phase, view_num, voxel, split)
+    Metas = getMvsecMetas(root, phase, view_num, voxel, split, custom)
 
     for meta in tqdm(Metas):
         for k, v in meta.items():
@@ -191,5 +222,11 @@ if __name__ == '__main__':
         default=False,
         type=bool
     )
+    parser.add_argument(
+        "--custom",
+        default=False,
+        type=bool
+    )
     args = parser.parse_args()
-    build_annoFile(args.data_root, args.save_annotation_root, args.view_num, args.phase, args.voxel, args.split, args.shuffle)
+    build_annoFile(args.data_root, args.save_annotation_root, \
+        args.view_num, args.phase, args.voxel, args.split, args.shuffle, args.custom)
